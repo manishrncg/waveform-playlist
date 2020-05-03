@@ -96,6 +96,10 @@ export default class {
     }
   }
 
+  setSpeed(speed) {
+    this.speed = speed;
+  }
+  
   setMasterGainLevel(level) {
     if (this.masterGain) {
       this.masterGain.gain.value = level;
@@ -116,6 +120,7 @@ export default class {
   */
   play(when, start, duration) {
     this.source.start(when, start, duration);
+    this.source.playbackRate.value = this.speed;
   }
 
   stop(when = 0) {

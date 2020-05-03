@@ -34,6 +34,7 @@ export default class {
 
     this.fadeType = 'logarithmic';
     this.masterGain = 1;
+    this.speed = 1;
     this.annotations = [];
     this.durationFormat = 'hh:mm:ss.uuu';
     this.isAutomaticScroll = false;
@@ -164,6 +165,10 @@ export default class {
   setUpEventEmitter() {
     const ee = this.ee;
 
+    ee.on('speedchange', (speed) => {
+      this.setSpeed(speed);
+    });
+
     ee.on('automaticscroll', (val) => {
       this.isAutomaticScroll = val;
     });
@@ -251,6 +256,12 @@ export default class {
       this.masterGain = volume / 100;
       this.tracks.forEach((track) => {
         track.setMasterGainLevel(this.masterGain);
+      });
+    });
+
+    ee.on('speedchanged', function (speed) {
+      _this2.tracks.forEach(function (track) {
+        track.setSpeed(speed);
       });
     });
 
@@ -380,6 +391,7 @@ export default class {
         track.setState(this.getState());
         track.setStartTime(start);
         track.setPlayout(playout);
+        track.setSpeed(1);
 
         track.setGainLevel(gain);
         track.setStereoPanValue(stereoPan);
@@ -543,6 +555,13 @@ export default class {
     }
   }
 
+  setSpeed(speed) {
+    this.speed = (speed >= 0.5 && speed <= 4) ? speed : 1;
+      if (this.isPlaying())
+          this.restartPlayFrom(this.playbackSeconds);
+      this.ee.emit('speedchanged', this.speed);
+  }
+
   soloTrack(track) {
     const index = this.soloedTracks.indexOf(track);
 
@@ -640,6 +659,7 @@ export default class {
     }
 
     this.tracks.forEach((track) => {
+      track.setSpeed(this.speed);
       track.setState('cursor');
       playoutPromises.push(track.schedulePlay(currentTime, start, end, {
         shouldPlay: this.shouldTrackPlay(track),
@@ -775,7 +795,7 @@ export default class {
     const elapsed = currentTime - this.lastDraw;
 
     if (this.isPlaying()) {
-      const playbackSeconds = cursorPos + elapsed;
+      const playbackSeconds = cursorPos + elapsed * this.speed;
       this.ee.emit('timeupdate', playbackSeconds);
       this.animationRequest = window.requestAnimationFrame(() => {
         this.updateEditor(playbackSeconds);
